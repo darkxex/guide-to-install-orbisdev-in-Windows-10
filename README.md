@@ -4,15 +4,9 @@
 
 To install the orbisdev toolchain, you must meet the following requirements:
 
-- The following packages depending of your OS:
 
-  Arch: 
 
-  ```bash
-  sudo pacman -Sy git gcc vim dotnet-runtime dotnet-sdk llvm libnfs texinfo wget patch cmake clang m4 flex bison base-devel llvm-lib
-  ```
-
-  Debian/Ubuntu:
+  Windows Subsystem for Linux (Debian/Ubuntu):
 
   ```bash
   wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
@@ -21,28 +15,9 @@ To install the orbisdev toolchain, you must meet the following requirements:
   sudo apt install git gcc llvm libnfs-dev vim libnfs-utils texinfo wget patch cmake clang m4 flex bison build-essential dotnet-runtime-3.1 dotnet-sdk-3.1
   ```
 
-  macOS: Install the latest XCode from the AppStore
-
-  ```bash
-  brew install libnfs wget
-  brew cask install dotnet-sdk
-  ```
-
-- HEN according to your firmware version with the following patches:
-  - Patches to load resources from /data/self
-  - Patch for ssc_enable_data_mount_patch
-  - Obviously, patches for fself and fpkg
-
-  Since it can be somewhat difficult to get them, I leave you a list of .bin/.elf for each version in which the above patches are already:
-  * For 6.72: modified version of mira in .elf format: [download](https://github.com/OpenPS4/guide-to-install-orbisdev/raw/master/resources/hen/Mira_Orbis_672.elf)
-    Thanks to Al Azif for the `ssc_enable_data_mount_patch` 6.72 offset :stuck_out_tongue_winking_eye:
-    ** (Side note: remember that to load the .elf you must use the "Bin Loader" of the OpenOrbis team)
-  * For 5.05: xXxTheDarkprogramerxXx fork that already includes these patches: [download](https://github.com/OpenPS4/guide-to-install-orbisdev/raw/master/resources/hen/ps4-hen-vtx-505.bin)
-  * For versions lower than 5.05: I didn't find any payload done, but you can backport [this patch](https://github.com/xXxTheDarkprogramerxXx/ps4-hen-vtx/commit/854e5cf0a17db0dbaf31b89bd5b93b6b557ff0fb#diff-bfece34b95e61897401e3e6451776315R383) and it should work :smile:
-  
 - You will need `libScePigletv2VSH.sprx` and `libSceShaccVSH.sprx` libraries. You can get them by loading RetroArch R4 and download the libraries from the `sce_module` folder mounted in the sandbox through FTP.
 
-- An NFS server with the following permissions: `*(sync,rw,no_subtree_check,insecure,fsid=0)` (to save you time NFS servers don't work in WSL 1)
+- An NFS server: explained later for windows ...
 
 - Have orbislink.pkg installed: [download](https://github.com/orbisdev/orbisdev-orbislink/raw/master/pkg/IV0003-BIGB00004_00-ORBISLINK0000000.pkg) (no need to repackage the .pkg, it's universal)
 
@@ -77,42 +52,11 @@ To install the orbisdev toolchain, you must meet the following requirements:
 
    In my case, I ran it on Ubuntu 20.04 with an Intel i9 9900k and it took me about 5 minutes, it's a quick install :stuck_out_tongue:
 
-## Set up the NFS server in Ubuntu
+## Set up the NFS server in Windows
 
-I can't do a tutorial on how to mount an NFS server on all Linux distributions so I'll do it with Ubuntu which I think is what most of ya'll use.
-
-1. Install the necessary packages and create the shared dir:
-
-   ```bash
-   sudo apt update && sudo apt install nfs-kernel-server
-   # create the shared dir
-   sudo mkdir -p ~/NFS/hostapp
-   sudo chown nobody:nogroup ~/NFS/hostapp
-   sudo chmod -R 777 ~/NFS/hostapp
-   ```
-
-2. Configure the NFS exports:
-
-   ```bash
-   sudo vim /etc/exports
-   # we'll add a line at the bottom of the file following this stucture:
-   # [NFS_SHARED_DIR_PATH] *(sync,rw,no_subtree_check,insecure,fsid=0)
-   # instead of * you can just allow your PS4 IP to get more security
-   # full example: /home/alfa/NFS/hostapp *(sync,rw,no_subtree_check,insecure,fsid=0)
-   # remember to don't use the ~ for the path as the service is executed with root permissions!
-   ```
-
-3. Refresh the configuration and start the NFS server:
-
-   ```bash
-   sudo exportfs -arvf
-   # if everything was okay, you should get an output like this: exporting *:/home/alfa/NFS/hostapp
-   # and we restart the server
-   sudo systemctl restart nfs-kernel-server
-   
-   ```
-
-4. Remember to configure your firewalls to allow NFS server traffic. I'll not do a tutorial on it because it depends a lot on your setup.
+contains socat and nfs server for windows.
+Extract the files in "C:/"
+![image](https://user-images.githubusercontent.com/17991404/146659053-bdf35446-60e0-4d72-8ddc-38af918d4f33.png)
 
 ## Compiling a example
 
@@ -150,19 +94,19 @@ I can't do a tutorial on how to mount an NFS server on all Linux distributions s
 
    ```ini
    [debugnet]
-   serverIp=192.168.2.61
+   serverIp=192.168.0.2
    debugPort=18194
    level=3
    [orbisNfs]
    enabled=1
-   nfsurl=nfs://192.168.2.61/home/alfa/NFS/hostapp
+   nfsurl=nfs://192.168.0.2/share
+
    ```
 
 3. Check if you have following files to your shared directory:
 
-   ```bash
-   alfa@alfa:~$ tree /home/alfa/NFS/hostapp
-   /home/alfa/NFS/hostapp
+   ```
+   C:\NFS\share
    ├── homebrew.self
    ├── libScePigletv2VSH.sprx
    └── libSceShaccVSH.sprx
@@ -173,14 +117,11 @@ I can't do a tutorial on how to mount an NFS server on all Linux distributions s
 
 4. Load HEN with the patches mentioned in the requirements and install the .pkg.
 
-5. Have a socat or netcat session ready to listen the debugnet. Examples:
+5. Have a socat session ready to listen the debugnet (Download in the Github). Examples:
 
-   ```bash
-   socat udp-recv:18194 stdout
    ```
-
-   ```bash
-   nc -ul -p 18194
+   Execute Start NFS.bat
+   Execute Start SOCAT.bat
    ```
 
 4. Open orbislink app and send the config to it using this command: 
